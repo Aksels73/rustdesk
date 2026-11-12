@@ -50,6 +50,13 @@ if api:
 block = "    // Brainy-People (OP #3641): eigener Server fest eingebaut\n    {\n" \
         "        let mut s = config::OVERWRITE_SETTINGS.write().unwrap();\n" + \
         "".join(f'        s.insert("{k}".to_owned(), "{v}".to_owned());\n' for k, v in zeilen) + "    }\n"
+# VOREINSTELLUNGEN (DEFAULT_SETTINGS): an, aber vom Kunden lokal abschaltbar.
+# Axel 12.11.2026 (OP #3641): "unter Sicherheit ... Aenderungen der Konfiguration
+# aus der Ferne zulassen standardmaessig angehakt".
+VOREINSTELLUNGEN = [("allow-remote-config-modification", "Y")]
+block += "    // Brainy-People: Voreinstellungen, lokal abschaltbar\n    {\n" \
+         "        let mut d = config::DEFAULT_SETTINGS.write().unwrap();\n" + \
+         "".join(f'        d.insert("{k}".to_owned(), "{v}".to_owned());\n' for k, v in VOREINSTELLUNGEN) + "    }\n"
 c = c.replace(anker, anker + block, 1)
 com.write_text(c, encoding="utf-8")
 
@@ -60,6 +67,10 @@ fehler = []
 if "rs-ny.rustdesk.com" in s2: fehler.append("rs-ny.rustdesk.com steht noch in config.rs")
 if host not in s2 or key not in s2: fehler.append("eigene Werte fehlen in config.rs")
 if host not in c2 or key not in c2: fehler.append("eigene Werte fehlen in common.rs")
+for k, v in VOREINSTELLUNGEN:
+    if f'd.insert("{k}".to_owned(), "{v}".to_owned())' not in c2:
+        fehler.append(f"Voreinstellung {k} fehlt in common.rs")
 if fehler:
     sys.exit("BP-PATCH FEHLER: " + "; ".join(fehler))
-print(f"BP-PATCH OK: Server {host}, Relay {relay}, API {api or '(Standard)'}, Schluessellaenge {len(key)}")
+print(f"BP-PATCH OK: Server {host}, Relay {relay}, API {api or '(Standard)'}, Schluessellaenge {len(key)}, "
+      f"Voreinstellungen {', '.join(k + '=' + v for k, v in VOREINSTELLUNGEN)}")
